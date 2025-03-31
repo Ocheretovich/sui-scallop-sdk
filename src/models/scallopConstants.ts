@@ -91,7 +91,16 @@ export class ScallopConstants {
     }
 
     if (params.forceWhitelistInterface) {
-      this._whitelist = params.forceWhitelistInterface;
+      this._whitelist = Object.fromEntries(
+        Object.entries(params.forceWhitelistInterface)
+          .filter(([_, value]) => {
+            return Array.isArray(value) || value instanceof Set;
+          })
+          .map(([key, value]) => [
+            key as keyof Whitelist,
+            value instanceof Set ? value : new Set(value),
+          ])
+      ) as Whitelist;
     }
   }
 
@@ -110,6 +119,14 @@ export class ScallopConstants {
       'oracles',
       'pythEndpoints',
     ] as const;
+
+    console.log({
+      a: this.isAddressInitialized,
+      b: !this.isEmptyObject(this._poolAddresses),
+      c: REQUIRED_WHITELIST_KEYS.every(
+        (t) => this.whitelist[t] && this.whitelist[t].size > 0
+      ),
+    });
     return (
       this.isAddressInitialized && // address is initialized
       !this.isEmptyObject(this._poolAddresses) && // poolAddresses is initialized
@@ -389,13 +406,17 @@ export class ScallopConstants {
     if (!this.params.forceWhitelistInterface) {
       this._whitelist = Object.fromEntries(
         Object.entries(whitelistResponse)
-          .filter(([_, value]) => Array.isArray(value) || value instanceof Set)
+          .filter(([_, value]) => {
+            console.log(value, Array.isArray(value) || value instanceof Set);
+            return Array.isArray(value) || value instanceof Set;
+          })
           .map(([key, value]) => [
             key as keyof Whitelist,
             value instanceof Set ? value : new Set(value),
           ])
       ) as Whitelist;
     }
+
     if (!this.params.forcePoolAddressInterface) {
       this._poolAddresses = Object.fromEntries(
         Object.entries(poolAddressesResponse)
